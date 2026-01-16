@@ -1,5 +1,3 @@
-
-
         INCLUDE "video.inc"
         INCLUDE "utils.inc"
         INCLUDE "obj/frames.inc"
@@ -60,7 +58,6 @@ ENDC
 IF LAST_BANK < $80
 MBC3                        EQU 1
 ENDC
-
 
         SECTION "hram", HRAM
         
@@ -156,7 +153,7 @@ Header:
         SECTION "main_code",ROM0
         
 Initialize:  
-        di
+        di        
         
         ld hl,$C000        ;   Clear RAM and WRAM
         xor a              ;Clear from C000 with 00
@@ -175,12 +172,12 @@ Initialize:
         dec c              ;Clear one byte
         jr nz,.hirbl       ;If 7E bytes hasn't been copied, then continue
         
-.wvblk: ld a,[$FF44]       ;Read LCDC vertical position
+        .wvblk: ld a,[$FF44]       ;Read LCDC vertical position
         cp $90
         jr nz,.wvblk       ;Loop until it is just inside VBlank
         
         xor a
-        ldh [$40],a         ; Disable LCDC
+        ldh [$FF40],a         ; Disable LCDC
         
         ld de,HBlank
         ld hl,HBlankTemplate
@@ -246,48 +243,47 @@ Initialize:
         
         ; Reset the APU
         xor a
-        ldh [$26], a
+        ldh [$FF26],a
         ld a, $FF
-        ldh [$26], a
+        ldh [$FF26],a
         ; Turn all DACs on
-        ldh [$12], a
-        ldh [$17], a
-        ldh [$1A], a
-        ldh [$21], a
+        ldh [$FF12],a
+        ldh [$FF17],a
+        ldh [$FF1A],a
+        ldh [$FF21],a
         ; Put all channels on both left and right
-        ldh [$25], a
+        ldh [$FF25],a
         
         ld a,$FF
-        ldh [$47],a             ; All black palette
-      
-        ld a,$91
-        ldh [$40],a             ; LCDC on!
+        ldh [$FF47],a             ; All black palette      
         
-.wfvbl: ldh a,[$44]
+        ld a,$91
+        ldh [$FF40],a             ; LCDC on!
+        
+.wfvbl: ldh a,[$FF44]
         cp $95                  ; Wait one full frame because the first frame
         jr nz,.wfvbl            ; may skip one HBlank interrupt
         
         ld a,1
-        ldh [$05],a
-        ldh [$06],a
+        ldh [$FF05],a
+        ldh [$FF06],a
         ld a,%0000_0101
-        ldh [$07],a             ; Enable timer but with a long period
+        ldh [$FF07],a             ; Enable timer but with a long period
         
         ld a,$CC
-        ldh [$47],a             ; Initialize palette
+        ldh [$FF47],a             ; Initialize palette
         ld a,$08
-        ldh [$41],a             ; Select HBlank as LCDC interrupt source
+        ldh [$FF41],a             ; Select HBlank as LCDC interrupt source
         ld a,%0000_0111
-        ldh [$FF],a             ; Enable LCDC interrupts and VBL interrupts
+        ldh [$FFFF],a             ; Enable LCDC interrupts and VBL interrupts
         ld a,SCY_OFFSET
-        ldh [$42],a             ; Scroll up a bit for creating the bars
+        ldh [$FF42],a             ; Scroll up a bit for creating the bars
         xor a                   ; Clear the interrupt flag (no spurious
-        ldh [$0F],a             ; interrupts please)
+        ldh [$FF0F],a             ; interrupts please)
         
         ei                      ; Interrupts on!
 
 .l2:    jr .l2
-        
         
         
 NextBank:
@@ -300,15 +296,13 @@ NextBank:
         ldh a,[CurVideoBankHigh]
         inc a
         ldh [CurVideoBankHigh],a
-        ld [$3333],a
         ENDC
         ret
         
         
-
 VBlank: ld a,TIMER_COUNTER_INIT
-        ldh [$05],a
-        ldh [$06],a
+        ldh [$FF05],a
+        ldh [$FF06],a
         ei
         
         ldh a,[PulldownCounter]
@@ -343,12 +337,11 @@ VBlank: ld a,TIMER_COUNTER_INIT
         ld [hl+],a
         inc e
         ld a,[de]
-        ld [hl+],a
         inc de                      ; Copy the uncompressed block via
         ENDR                        ; unrolled loop
         
         ld a,SCY_OFFSET
-        ldh [$42],a                 
+        ldh [$FF42],a                 
         dec a                       
         ldh [HBlankSCY],a           ; Reset the scroll and the
         ld a,$18                    ; counters used by the HBlank thread,
@@ -373,7 +366,7 @@ VBlank: ld a,TIMER_COUNTER_INIT
         rra
         jr c,.nochgpal
         ld a,$F0
-        ldh [$47],a
+        ldh [$FF47],a
 
 .nochgpal:
         jp .vblank_exit
@@ -441,10 +434,10 @@ VBlank: ld a,TIMER_COUNTER_INIT
         ld a,[de]
         ld [hl+],a
         inc de          
-        ENDR        ; 16 bytes per iteration!
+        ENDR        ; 16 bytes per iteration!        
         
 .c_end: ld a,SCY_OFFSET
-        ldh [$42],a
+        ldh [$FF42],a
         dec a
         ldh [HBlankSCY],a
         ld a,$18
@@ -467,7 +460,7 @@ VBlank: ld a,TIMER_COUNTER_INIT
         rra
         jr c,.c_nochgpal
         ld a,$F0
-        ldh [$47],a
+        ldh [$FF47],a
 
 .c_nochgpal: 
         ld a,[de]
@@ -529,10 +522,10 @@ VBlank: ld a,TIMER_COUNTER_INIT
         ld h,a
         
         ld a,$CC
-        ldh [$47],a
-        ldh a,[$40]
+        ldh [$FF47],a
+        ldh a,[$FF40]
         xor $18
-        ldh [$40],a
+        ldh [$FF40],a
         
         ld a,4
         ldh [Cycle],a
@@ -555,47 +548,28 @@ VBlank: ld a,TIMER_COUNTER_INIT
         
 .video_ended:
         ld a,SCY_OFFSET
-        ldh [$42],a
+        ldh [$FF42],a
         dec a
         ldh [HBlankSCY],a
         ld a,$18
         ldh [HBlankSelfmodJump],a
         
-        ld bc,Silence               ; Set sound playback address to a zeroed area
-        
-        jp .vblank_exit
-        
-        
-.freeze_frame:
-        xor a
-        ldh [DeltaPacketCount],a
-        ld a,F_COMPRESSED
-        ldh [CompressedFlag],a
-        ld a,SCY_OFFSET
-        ldh [$42],a
-        dec a
-        ldh [HBlankSCY],a
-        ld a,$18
-        ldh [HBlankSelfmodJump],a
-        
-.vblank_exit:
-.ly_zero_wait:
-        ldh a,[$44]
+.ldc1 2 ; delay to avoid skipping frame at the beginning
+        ldh a,[$FF44]
         and a
-        jr nz,.ly_zero_wait
+        jr z,.ldc1
         inc a
-        ldh [$06],a                 ;Disable the frickin' timer!!
-        ldh [$05],a
+        ldh [$FF06],a                 ;Disable the frickin' timer!!
+        ldh [$FF05],a
         
         jp TimerEntry
-        
         
         
         SECTION "video_engine_template", ROM0
 
 HBlankTemplate:
 HBT_compressed:
-        ldh a,[$44]         ; Use LY to count the packets already done
+        ldh a,[$FF44]         ; Use LY to count the packets already done
 HBT_counter:                ; CompressionPacketCount - 1
         cp 255
         jr nc,HBT_endj
@@ -629,7 +603,7 @@ HBT_counter:                ; CompressionPacketCount - 1
 HBT_commend:  
 HBT_endj:                 ; HBlankSelfmodJump
         jr HBT_end_noscroll           ; This offset must be $18
-        ldh [$05],a
+        ldh [$FF05],a
         ldh [HBlankSelfmodJump],a     ; A == $18!
         ldh a,[HBlankSCY]
         dec a
@@ -678,7 +652,7 @@ HBT_VideoBankHigh:
 HBT_Entry:
 HBT_scy:                  ; HBlankSCY - 1
         ld a,SCY_OFFSET-1
-        ldh [$42],a
+        ldh [$FF42],a
         
 HBT_cjmp:                 ; CompressedFlag
         jr HBT_compressed
@@ -708,8 +682,7 @@ HBT_notcompr:
         ENDC
         
         jr HBT_commend
-HBT_end:
-        
+HBT_end:  
         
 RealHBlankProcSize                  EQU HBT_end - HBlankTemplate
 HBlankEntryOffset                   EQU HBT_Entry - HBlankTemplate
@@ -729,17 +702,15 @@ ENDC
 HBlankAudioProcReturnOffset         EQU HBT_AudioProcReturn - HBlankTemplate
 HBlankTimerEntryOffset              EQU HBT_TimerEntry - HBlankTemplate
 
-
         SECTION "video_engine", HRAM[$FFFE-RealHBlankProcSize]
 
 HBlank:                 DS RealHBlankProcSize
         
-
         SECTION "audio_frame_handlers", ROM0[$0000]
        
 AudioFrame:
         ld a,[bc]
-        ldh [$24],a
+        ldh [$FF24],a
         inc bc
         bit 7,b
         jr z,AudioProcReturn
@@ -755,7 +726,6 @@ AudioFrame:
         ENDC
         jr AudioProcReturn
         
-        
         SECTION "silence", ROM0
         
 Silence: DS 400 ; double length in case of pulldown-triggered freeze-frame
@@ -764,5 +734,4 @@ Silence: DS 400 ; double length in case of pulldown-triggered freeze-frame
         SECTION "data", ROM0[$4000]
         
 Frame:  DB 0
-        
         

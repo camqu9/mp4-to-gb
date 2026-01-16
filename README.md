@@ -1,3 +1,15 @@
+
+use this if u wanna lowk i vibecoded it with claude so if it dont work i idk
+i thik it works 
+
+
+
+
+
+
+
+orignal readme.md is as follows
+
 # DMG Bad Apple AV
 
 **GameBoy 30 FPS 160x72 (stretched) B/W Video Player**
